@@ -19,6 +19,7 @@ class CNVNet():
 	def _init_model(self):
 
 		self.model = CellpaintingCNV(tasks=self.tasks, loss_functions=self.loss_functions)
+		self.model = self.model.to(device=self.device)
 
 	def _init_optimizer(self):
 
@@ -31,6 +32,8 @@ class CNVNet():
 		for i, batch in enumerate(dataloader):
 			x = batch['image']
 			y = batch['labels']
+
+			x, y = x.to(device=self.device), y.to(device=self.device)
 			print('batch: [{}/{}]'.format(i,len(dataloader)))
 
 			preds = self.model(x)
@@ -51,7 +54,7 @@ class CNVNet():
 
 		predictions = list()
 		for i, (x,y) in enumerate(data):
-
+			x, y = x.to(device=self.device), y.to(device=self.device)
 			preds = self.model(x)
 			# TODO softmax?
 
