@@ -1,0 +1,15 @@
+{
+  "run": {
+    "seed": 42,
+    "cuda": false,
+    "epochs": 10,
+    "evaluation_interval": 1,
+    "batch_size": 32,
+    "shuffle": true
+  },
+  "log": {
+    "checkpoint_directory": "log/checkpoints/defaults/",
+    "summary_directory": "log/summaries/defaults/",
+    "overwrite": true
+  }
+}
