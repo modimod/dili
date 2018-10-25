@@ -1,6 +1,6 @@
 import torch.nn as nn
 import torch.nn.functional as F
-from MultiOuts import MultiOuts
+from net.modules.MultiOuts import MultiOuts
 
 
 class CellpaintingCNV(nn.Module):

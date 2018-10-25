@@ -1,4 +1,4 @@
-from modules.CNV import CellpaintingCNV
+from net.modules.CNV import CellpaintingCNV
 from torch.optim import Adam
 from utils.metrics import PerformanceEntry
 import torch

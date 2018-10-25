@@ -1,6 +1,5 @@
 from sklearn.model_selection import KFold
 from torch.utils.data import Subset, DataLoader
-#import torch
 import os
 import shutil
 
@@ -53,8 +52,8 @@ class KFoldSupervisor:
 			subset_train = Subset(self.dataset, train_idx)
 			subset_valid = Subset(self.dataset, val_idx)
 
-			loader_train = DataLoader(dataset=subset_train, batch_size=self.run.batch_size, shuffle=True)
-			loader_valid = DataLoader(dataset=subset_valid, batch_size=self.run.batch_size, shuffle=False)
+			loader_train = DataLoader(dataset=subset_train, batch_size=self.settings.run.batch_size, shuffle=True)
+			loader_valid = DataLoader(dataset=subset_valid, batch_size=self.settings.run.batch_size, shuffle=False)
 
 			for epoch in range(epochs):
 				print('cv_epoch: {}, epoch: {}'.format(i,epoch))

@@ -1,7 +1,7 @@
 {
   "run": {
     "seed": 42,
-    "cuda": false,
+    "cuda": true,
     "epochs": 10,
     "evaluation_interval": 1,
     "batch_size": 32,
