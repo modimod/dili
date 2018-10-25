@@ -53,7 +53,10 @@ class CNVNet():
 		self.model.eval()
 
 		predictions = list()
-		for i, (x,y) in enumerate(data):
+		for i, batch in enumerate(data):
+			x = batch['image']
+			y = batch['labels']
+
 			x, y = x.to(device=self.device), y.to(device=self.device)
 			preds = self.model(x)
 			# TODO softmax?
