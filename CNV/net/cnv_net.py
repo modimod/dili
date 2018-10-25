@@ -5,9 +5,11 @@ import torch
 
 class CNVNet():
 
-	def __init__(self, tasks, loss_functions=None):
+	def __init__(self, settings, tasks, loss_functions=None):
 		self.tasks = tasks
 		self.loss_functions = loss_functions
+
+		self.settings = settings
 
 		self.device = r'cuda' if torch.cuda.is_available() and self.settings.run.cuda else r'cpu'
 

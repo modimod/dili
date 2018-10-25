@@ -99,7 +99,7 @@ class KFoldSupervisor:
 		if self.model is not None: # and isinstance(self.model, BaseTagger):
 			self.model.reset()
 		else:
-			self.model = CNVNet(tasks=tasks)
+			self.model = CNVNet(tasks=tasks, settings=self.settings)
 
 		self.len = len(self.dataset)
 
