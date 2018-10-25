@@ -17,7 +17,6 @@ class CellpaintingCNV(nn.Module):
 		self.loss = self.multiout.masked_loss
 
 	def forward(self, x):
-		print(x.device)
 		x = self.pool(F.relu(self.conv1(x)))
 		x = self.pool(F.relu(self.conv2(x)))
 		x = x.view(-1, 16*127*171)

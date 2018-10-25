@@ -53,15 +53,17 @@ class CNVNet():
 		self.model.eval()
 
 		predictions = list()
-		for i, batch in enumerate(data):
-			x = batch['image']
-			y = batch['labels']
 
-			x, y = x.to(device=self.device), y.to(device=self.device)
-			preds = self.model(x)
-			# TODO softmax?
+		with torch.no_grad():
+			for i, batch in enumerate(data):
+				x = batch['image']
+				y = batch['labels']
 
-			predictions.extend(preds)
+				x, y = x.to(device=self.device), y.to(device=self.device)
+				preds = self.model(x)
+				# TODO softmax?
+
+				predictions.extend(preds)
 
 		return predictions
 
