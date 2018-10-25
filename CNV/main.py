@@ -1,5 +1,5 @@
 from supervisors.kfold_superviser import KFoldSupervisor
-from settings import Settings
+from settings.settings import Settings
 
 if __name__=='__main__':
 

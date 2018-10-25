@@ -1,4 +1,7 @@
 CNV/log/summaries/defaults/*
+.ipynb_checkpoints
+.ipynb_checkpoints/*
+*.ipynb
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
