@@ -13,6 +13,8 @@ from torchvision.transforms import Compose
 from utils.constants import tasks
 from net.cnv_net import CNVNet
 
+from tqdm.auto import tqdm
+
 
 class KFoldSupervisor:
 
@@ -35,7 +37,7 @@ class KFoldSupervisor:
 		if self.summary_writer is not None and isinstance(self.summary_writer, SummaryWriter):
 			self.summary_writer.close()
 
-	def train(self, epochs, folds=3):
+	def train(self, folds=3):
 		'''
 
 		:param model: CNVNET (inkl optimizer)
@@ -55,13 +57,16 @@ class KFoldSupervisor:
 			loader_train = DataLoader(dataset=subset_train, batch_size=self.settings.run.batch_size, shuffle=True)
 			loader_valid = DataLoader(dataset=subset_valid, batch_size=self.settings.run.batch_size, shuffle=False)
 
-			for epoch in range(epochs):
+			self._evaluate(loader_train, loader_valid, global_step=1)
+
+			for epoch in tqdm(range(1, self.settings.run.epochs+1, 1),
+							desc=r'Progress Fold [{}/{}]'.format(i, folds), unit=r'ep'):
+
 				print('cv_epoch: {}, epoch: {}'.format(i,epoch))
 
 				self.model.fit(loader_train)
 
 				self._evaluate(loader_train, loader_valid, global_step=epoch)
-
 
 	def _evaluate(self, loader_train, loader_valid, global_step):
 
@@ -79,7 +84,6 @@ class KFoldSupervisor:
 				r'training': performance_train.accuracy,
 				r'validation': performance_valid.accuracy},
 			global_step=global_step)
-
 
 		print('train: {}'.format(str(performance_train)))
 		print('valid: {}'.format(str(performance_valid)))

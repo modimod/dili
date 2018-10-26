@@ -8,4 +8,4 @@ if __name__=='__main__':
 	settings = Settings.from_json_file(settings_file)
 
 	supervisor = KFoldSupervisor(settings=settings) #dataset=dataset, model=model)
-	supervisor.train(epochs=10)
+	supervisor.train()

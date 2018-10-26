@@ -47,6 +47,9 @@ class CellpaintingDataset(Dataset):
 
 		return sample
 
+	def get_labels(self):
+		return self.data_file.iloc[:, 1:].values.astype(np.float)
+
 
 def load_data(features_file, labels_file=None):
 	features = pd.read_csv(features_file).values

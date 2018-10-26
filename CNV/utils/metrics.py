@@ -1,4 +1,6 @@
-
+from utils.constants import tasks
+import numpy as np
+from sklearn.metrics import accuracy_score
 
 class PerformanceEntry():
 
@@ -14,9 +16,16 @@ class PerformanceEntry():
 
 	def calc_accuracy(self, predictions, labels):
 		# TODO calc
-		acc = 0.8
+		idx = tasks['vnctr']
+
+		predictions = np.array(predictions)
+		predictions = predictions[:, idx]
+
+		labels = labels[:, idx]
+
+		acc = accuracy_score(y_true=labels, y_pred=predictions)
 
 		self.accuracies.append(acc)
 
 	def __str__(self):
-		print(self.accuracies)
+		print('Accs: {} \nLosses: {}'.format(self.accuracies, self.losses))
