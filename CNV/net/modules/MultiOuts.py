@@ -1,9 +1,10 @@
 import torch.nn as nn
 import torch
 from torch.nn import CrossEntropyLoss,BCEWithLogitsLoss
+from utils.constants import tasks
 
 class MultiOuts(nn.Module):
-	def __init__(self, hidden_dim, tasks, loss_functions=None):
+	def __init__(self, hidden_dim, loss_functions=None):
 		super(MultiOuts, self).__init__()
 
 		self.tasks = tasks

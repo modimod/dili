@@ -17,6 +17,7 @@ class DataSettings(object):
 		self.csv_file = settings[r'csv_file']
 		self.root_dir = settings[r'root_dir']
 		self.file_ext = settings[r'file_ext']
+		self.smiles_csv_file = settings[r'smiles_csv_file']
 
 		self.training_file_path = settings[r'training_file_path']
 		self.training_sample_separator = settings[r'training_sample_separator']
@@ -56,9 +57,12 @@ class RunSettings(object):
 		self.seed = settings[r'seed']
 		self.cuda = settings[r'cuda']
 		self.epochs = settings[r'epochs']
+		self.early_stop = settings[r'early_stop']
 		self.evaluation_interval = settings[r'evaluation_interval']
 		self.batch_size = settings[r'batch_size']
+		self.batch_size_eval = settings[r'batch_size_eval']
 		self.shuffle = settings[r'shuffle']
+		self.test_mode = settings[r'test_mode']
 		self.weight_classes = settings[r'weight_classes']
 		self.weight_classes_normalised = settings[r'weight_classes_normalised']
 		self.weight_classes_deleted = settings[r'weight_classes_deleted']
@@ -80,15 +84,10 @@ class ArchitectureSettings(object):
 		self.fc_unit_1 = settings[r'fc_unit_1']
 		self.fc_unit_2 = settings[r'fc_unit_2']
 
-		'''
-		self.extract_size = settings[r'extract_size']
-		self.extract_layers = settings[r'extract_layers']
-		self.extract_dropout = settings[r'extract_dropout']
-		self.scan_size = settings[r'scan_size']
-		self.scan_layers = settings[r'scan_layers']
-		self.scan_dropout = settings[r'scan_dropout']
-		self.project_dropout = settings[r'project_dropout']
-		'''
+		self.lstm_hidden_dim = settings[r'lstm_hidden_dim']
+		self.lstm_num_layers = settings[r'lstm_num_layers']
+		self.lstm_dropout = settings[r'lstm_dropout']
+		self.lstm_sliding_window = settings[r'lstm_sliding_window']
 
 
 class OptimiserSettings(object):

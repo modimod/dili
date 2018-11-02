@@ -1,6 +1,7 @@
 from skimage import transform
 import torch
 import numpy as np
+from torchvision import transforms as trans
 
 # https://pytorch.org/tutorials/beginner/data_loading_tutorial.html
 
@@ -35,7 +36,7 @@ class Rescale(object):
 
 		# h and w are swapped for landmarks because for images,
 		# x and y axes are axis 1 and 0 respectively
-		labels = labels * [new_w / w, new_h / h]
+#		labels = labels * [new_w / w, new_h / h]
 
 		return {'image': img, 'labels': labels}
 
@@ -65,10 +66,9 @@ class RandomCrop(object):
 		top = np.random.randint(0, h - new_h)
 		left = np.random.randint(0, w - new_w)
 
-		image = image[top: top + new_h,
-					  left: left + new_w]
+		image = image[top: top + new_h, left: left + new_w]
 
-		labels = labels - [left, top]
+	#	labels = labels - [left, top]
 
 		return {'image': image, 'labels': labels}
 
@@ -86,3 +86,25 @@ class ToTensor(object):
 
 		return {'image': torch.from_numpy(image).float(),
 				'labels': torch.from_numpy(labels).float()}
+
+
+class Normalize(object):
+	"""Normalizes Tensor."""
+
+	def __init__(self, mean, std):
+		self.norm = trans.Normalize(mean,std)
+
+	def __call__(self, sample):
+		image, labels = sample['image'], sample['labels']
+
+		image = self.norm(image)
+
+		return {'image': image, 'labels': labels}
+
+class TakeChannels(object):
+	"""Take only first three channels of image"""
+
+	def __call__(self, sample):
+		image, labels = sample['image'], sample['labels']
+
+		return {'image': image[:,:,:3], 'labels': labels}

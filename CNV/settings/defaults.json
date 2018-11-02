@@ -9,24 +9,33 @@
     "fc_layers": 2,
     "fc_unit_1": 128,
     "fc_unit_2": 32,
-    "input_dropout": 0
+    "input_dropout": 0,
+    "lstm_hidden_dim": 64,
+    "lstm_num_layers": 2,
+    "lstm_dropout": 0.8,
+    "lstm_sliding_window": 3
 
   },
   "run": {
     "seed": 42,
     "cuda": true,
     "epochs": 100,
+    "early_stop": 10,
     "evaluation_interval": 1,
-    "batch_size": 4,
+    "batch_size": 32,
+    "batch_size_eval": 64,
     "shuffle": true,
+    "test_mode": false,
     "weight_classes": true,
     "weight_classes_normalised": true,
     "weight_classes_deleted": false
   },
   "data": {
-    "csv_file": "/Users/Moerti/AA_projects/DILI/CNV/data/dilirank_cellpainting_labels.csv",
-    "root_dir": "/Users/Moerti/AA_projects/DILI/CNV/data/images",
+    "csv_file": "/Users/Moerti/AA_projects/DILI/src/CNV/data/dilirank_cellpainting_labels.csv",
+    "root_dir": "/Users/Moerti/AA_projects/DILI/src/CNV/data/images",
     "file_ext": ".npz",
+
+    "smiles_csv_file": "/Users/Moerti/AA_projects/DILI/src/CNV/data/dili_rank_cluster.csv",
 
     "training_file_path": "resources/data/train_all.csv",
     "training_sample_separator": ";",

@@ -2,19 +2,22 @@
   "run": {
     "seed": 42,
     "cuda": true,
-    "epochs": 10,
+    "epochs": 1000,
     "evaluation_interval": 1,
     "batch_size": 32,
-    "shuffle": true
+    "batch_size_eval": 64,
+    "shuffle": true,
+    "test_mode": false
   },
   "log": {
-    "checkpoint_directory": "log/checkpoints/defaults/",
-    "summary_directory": "log/summaries/defaults/",
+    "checkpoint_directory": "/system/user/moertenb/dili/src/CNV/log/checkpoints/defaults/",
+    "summary_directory": "/system/user/moertenb/dili/src/CNV/log/summaries/defaults/",
     "overwrite": true
   },
   "data": {
-    "csv_file": "data/dilirank_cellpainting_labels.csv",
-    "root_dir": "data/images",
-    "file_ext": ".npz"
+    "csv_file": "/system/user/moertenb/dili/src/CNV/data/dilirank_cellpainting_labels.csv",
+    "root_dir": "/system/user/moertenb/cellpainting",
+    "file_ext": ".npz",
+    "smiles_csv_file": "/system/user/moertenb/dili/src/CNV/data/dili_rank_cluster.csv"
   }
 }

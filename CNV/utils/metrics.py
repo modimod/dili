@@ -1,31 +1,47 @@
-from utils.constants import tasks
+from utils.constants import tasks,tasks_idx
 import numpy as np
 from sklearn.metrics import accuracy_score
+import torch
 
 class PerformanceEntry():
 
 	def __init__(self):
-		self.losses = list()
-		self.accuracies = list()
-
-	def update_loss(self, loss):
-		self.losses.append(loss)
-
-	def update_accuracy(self, acc):
-		self.accuracies.append(acc)
+		self.loss = None
+		self.acc = None
 
 	def calc_accuracy(self, predictions, labels):
 		# TODO calc
-		idx = tasks['vnctr']
+		idx = tasks_idx['vnctr']
 
-		predictions = np.array(predictions)
-		predictions = predictions[:, idx]
+		preds = predictions[idx]
+		preds = torch.stack(preds).cpu().numpy()
+		preds = np.argmax(preds, axis=1)
 
 		labels = labels[:, idx]
 
-		acc = accuracy_score(y_true=labels, y_pred=predictions)
+		self.acc = accuracy_score(y_true=labels, y_pred=preds)
 
-		self.accuracies.append(acc)
+	# @property
+	# def loss(self):
+	# 	return self.loss
+	#
+	# @loss.setter
+	# def loss(self, new_loss):
+	# 	self._loss = new_loss
+	#
+	# @property
+	# def acc(self):
+	# 	return self.acc
+	#
+	# @acc.setter
+	# def acc(self, new_acc):
+	# 	self._acc = new_acc
+
+
+
+
 
 	def __str__(self):
 		print('Accs: {} \nLosses: {}'.format(self.accuracies, self.losses))
+
+

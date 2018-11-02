@@ -2,10 +2,12 @@
   "run": {
     "seed": 42,
     "cuda": false,
-    "epochs": 10,
+    "epochs": 100,
     "evaluation_interval": 1,
-    "batch_size": 32,
-    "shuffle": true
+    "batch_size": 8,
+    "batch_size_eval": 8,
+    "shuffle": true,
+    "test_mode": true
   },
   "log": {
     "checkpoint_directory": "log/checkpoints/defaults/",

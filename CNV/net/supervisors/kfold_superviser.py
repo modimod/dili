@@ -1,5 +1,6 @@
 from sklearn.model_selection import KFold
-from torch.utils.data import Subset, DataLoader
+from torch.utils.data import DataLoader #Subset
+from resources.subset import Subset
 import os
 import shutil
 
@@ -10,19 +11,21 @@ from resources.cellpainting_dataset import CellpaintingDataset
 from resources.transforms import ToTensor
 from torchvision.transforms import Compose
 
-from utils.constants import tasks
-from net.cnv_net import CNVNet
+from net.taggers.cnv_tagger import CNVTagger
 
-from tqdm.auto import tqdm
+from tqdm import tqdm
 
+from utils.metrics import PerformanceEntry
 
-class KFoldSupervisor:
+from net import BaseSupervisor, BaseTagger
+
+class KFoldSupervisor(BaseSupervisor):
 
 	def __init__(self, settings):
 
 		self.settings = settings
 
-		self.model = None
+		self.tagger = None
 		self.dataset = None
 		self.len = None
 
@@ -39,54 +42,54 @@ class KFoldSupervisor:
 
 	def train(self, folds=3):
 		'''
-
-		:param model: CNVNET (inkl optimizer)
-		:param dataset: torch.utils.data.Dataset
-		:param epochs:
 		:param folds:
 		:return:
 		'''
 
 		kf = KFold(n_splits=folds)
 
-		for i,(train_idx, val_idx) in enumerate(kf.split(range(self.len))):
+		for i, (train_idx, val_idx) in enumerate(tqdm(kf.split(range(self.len)), desc=r'Progress Fold', unit=r'f', leave=False)):
 			# Subset
 			subset_train = Subset(self.dataset, train_idx)
 			subset_valid = Subset(self.dataset, val_idx)
 
 			loader_train = DataLoader(dataset=subset_train, batch_size=self.settings.run.batch_size, shuffle=True)
-			loader_valid = DataLoader(dataset=subset_valid, batch_size=self.settings.run.batch_size, shuffle=False)
-
-			self._evaluate(loader_train, loader_valid, global_step=1)
+			loader_valid = DataLoader(dataset=subset_valid, batch_size=self.settings.run.batch_size_eval, shuffle=False)
 
 			for epoch in tqdm(range(1, self.settings.run.epochs+1, 1),
-							desc=r'Progress Fold [{}/{}]'.format(i, folds), unit=r'ep'):
+							desc=r'Epochs', unit=r'ep', leave=False):
 
-				print('cv_epoch: {}, epoch: {}'.format(i,epoch))
+				print('fold: {}, epoch: {}'.format(i,epoch))
 
-				self.model.fit(loader_train)
+				epoch_loss = self.tagger.fit(loader_train, track_loss=True)
+				self.performance_train.loss = epoch_loss
 
-				self._evaluate(loader_train, loader_valid, global_step=epoch)
+				self._evaluate(loader_train, loader_valid, global_step=(i+1)*epoch)
+
+			# add acc on validation set after last epoch to acc-list
+			self.accs_fold.append(self.performance_valid.acc)
+
+		print('mean fold accuracy on validation set: {}'.format(sum(self.accs_fold)/folds))
 
 	def _evaluate(self, loader_train, loader_valid, global_step):
 
-		performance_train = self.model.eval(loader_train)
-		performance_valid = self.model.eval(loader_valid)
+		#print('begin evaluate train')
+		#performance_train = self.tagger.evaluate(loader_train, info='train')
+		print('begin evalute valid')
+		self.performance_valid = self.tagger.evaluate(loader_valid, info='valid')
 
 		self.summary_writer.add_scalars(
 			main_tag=r'loss', tag_scalar_dict={
-				r'training': performance_train.loss,
-				r'validation': performance_valid.loss},
+				r'training': self.performance_train.loss,
+				r'validation': self.performance_valid.loss},
 			global_step=global_step)
 
 		self.summary_writer.add_scalars(
 			main_tag=r'accuracy', tag_scalar_dict={
-				r'training': performance_train.accuracy,
-				r'validation': performance_valid.accuracy},
+				# r'training': self.performance_train.acc,
+				r'validation': self.performance_valid.acc},
 			global_step=global_step)
 
-		print('train: {}'.format(str(performance_train)))
-		print('valid: {}'.format(str(performance_valid)))
 
 	def reset (self) -> None:
 		"""
@@ -100,12 +103,17 @@ class KFoldSupervisor:
 
 		self.dataset = self._create_dataset()
 
-		if self.model is not None: # and isinstance(self.model, BaseTagger):
-			self.model.reset()
+		if self.tagger is not None and isinstance(self.model, BaseTagger):
+			self.tagger.reset()
 		else:
-			self.model = CNVNet(tasks=tasks, settings=self.settings)
+			self.tagger = CNVTagger(settings=self.settings)
 
 		self.len = len(self.dataset)
+
+		self.performance_train = PerformanceEntry()
+		self.performance_valid = PerformanceEntry()
+
+		self.accs_fold = list()
 
 	def _prepare_directory(self, directory: str) -> None:
 		"""
@@ -126,7 +134,8 @@ class KFoldSupervisor:
 			csv_file=self.settings.data.csv_file,
 			root_dir=self.settings.data.root_dir,
 			file_ext=self.settings.data.file_ext,
-			transform=Compose([ToTensor()]))
+			transform=Compose([ToTensor()]),
+			mode_test=self.settings.run.test_mode)
 
 
 
