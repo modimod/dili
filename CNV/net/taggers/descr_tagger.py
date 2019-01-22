@@ -1,28 +1,26 @@
 from torch.optim import Adam
-
 from utils.metrics import PerformanceEntry
 import torch
+from tqdm import tqdm
+from utils.constants import tasks_label_count
 
-from utils.constants import tasks, tasks_label_count
-
-from sklearn.metrics import confusion_matrix
+from net import BaseTagger
 from net.taggers.general_tagger import GeneralTagger
-from net.modules.lstm import SmilesModule, SmilesBinaryModule, SmilesRankedModule
+from net.modules.descr import DescrModule, DescrBinaryModule, DescrRankedModule
+import os
+from sklearn.metrics import confusion_matrix
 
 
-class SmilesTagger(GeneralTagger):
-
-	def __init__(self, settings):
-		super().__init__(settings)
+class DescrTagger(GeneralTagger):
 
 	def _init_model(self):
 
 		if self.settings.data.label_format == 'binary':
-			m = SmilesBinaryModule
+			m = DescrBinaryModule
 		elif self.settings.data.label_format == 'ranked':
-			m = SmilesRankedModule
+			m = DescrRankedModule
 		else:
-			m = SmilesModule
+			m = DescrModule
 
 		self.model = m(self.settings)
 		self.model = self.model.to(device=self.device)
@@ -37,12 +35,12 @@ class SmilesTagger(GeneralTagger):
 
 		losses = list()
 
-		for i, (smiles, labels, lengths) in enumerate(dataloader):
+		for i, (descr, labels) in enumerate(dataloader):
 
-			smiles = smiles.to(device=self.device)
+			descr = descr.to(device=self.device)
 			labels = labels.to(device=self.device)
 
-			preds = self.model(smiles, lengths)
+			preds = self.model(descr)
 
 			loss = self.model.loss(preds, labels)
 
@@ -54,39 +52,15 @@ class SmilesTagger(GeneralTagger):
 
 			self.optimizer.step()
 
-			if i % 10 == 0 or (i+1) == len(dataloader):
-				print('Progress Fit: [{}/{}]'.format(i+1, len(dataloader)))
+			# if i % 10 == 0 or (i+1) == len(dataloader):
+			# 	print('Progress Fit: [{}/{}] Batch Loss: {}'.format(i+1, len(dataloader), loss.item()))
 
 		self.optimizer.zero_grad()
 
-		return sum(losses)/len(losses) if track_loss else None
+		return sum(losses)/len(dataloader) if track_loss else None
 
 	def predict(self, dataloader, info=None, eval_col=None):
-
-		predictions = [list() for _ in range(len(tasks))]
-
-		labels = list()
-		losses = list()
-
-		with torch.no_grad():
-			for i, (x,y,length) in enumerate(dataloader):
-
-				x = x.to(device=self.device)
-
-				preds = self.model(x, length)
-
-				for p, ps in zip(predictions, preds):
-					p.extend(ps)
-
-				if eval:
-					y = y.to(device=self.device)
-					labels.extend(y)
-
-					loss = self.model.loss(preds, y, 'vnctr')
-
-					losses.append(loss.item())
-
-		return predictions, (torch.stack(labels).cpu().numpy(), sum(losses)/len(dataloader)) if eval else None
+		pass
 
 	def evaluate(self, dataloader, info=None, eval_col='vnctr'):
 
@@ -98,12 +72,12 @@ class SmilesTagger(GeneralTagger):
 
 		with torch.no_grad():
 
-			for i, (smiles, labels, lengths) in enumerate(dataloader):
+			for i, (descr, labels) in enumerate(dataloader):
 
-				smiles = smiles.to(device=self.device)
+				descr = descr.to(device=self.device)
 				labels = labels.to(device=self.device)
 
-				preds = self.model(smiles, lengths)
+				preds = self.model(descr)
 
 				y_pred, y_true, y_score = dataloader.dataset.dataset.transform_prediction(
 					y_pred=preds,

@@ -1,4 +1,5 @@
 from net.modules.CNV import CellpaintingCNV
+from net.modules.gapnet import GAPNet02
 from torch.optim import Adam
 from utils.metrics import PerformanceEntry
 import torch

@@ -62,7 +62,7 @@ class MultiOuts(nn.Module):
 
 
 class FC(nn.Module):
-	#def __init__ (self, input_dim, hidden_dim_1, hidden_dim_2, tagset_size_array, dropout=0.8):
+	#def __init__.py (self, input_dim, hidden_dim_1, hidden_dim_2, tagset_size_array, dropout=0.8):
 	def __init__ (self, input_dim, hidden_dim_1, hidden_dim_2, tasks, loss_functions=None, dropout=0.8):
 		super(FC, self).__init__()
 		self.hidden_dim_1 = hidden_dim_1

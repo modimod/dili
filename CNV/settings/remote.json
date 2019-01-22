@@ -1,23 +1,63 @@
 {
+  "architecture": {
+    "fc_layers": 2,
+    "fc_unit_1": 256,
+    "fc_unit_2": 128,
+    "fc_hidden_dims": [256, 128, 64, 32],
+    "fc_dropout": 0.0,
+    "input_dropout": 0,
+    "lstm_hidden_dim": 64,
+    "lstm_num_layers": 2,
+    "lstm_dropout": 0.8,
+    "lstm_sliding_window": 3,
+    "feature_extract": false,
+    "model_type": "gapnet",
+    "_comment_model_type": ["descr", "descr_gap", "smiles", "smiles_gap", "gapnet"]
+  },
+  "optimiser": {
+    "learning_rate": 0.0001,
+    "learning_rate_gapnet": 1e-4,
+    "lr_scheduler": false
+  },
   "run": {
+    "checkpoint_file": false,
     "seed": 42,
     "cuda": true,
-    "epochs": 1000,
+    "gpu": 1,
+    "device": "cuda:1",
+    "epochs": 100,
+    "early_stop": 10,
     "evaluation_interval": 1,
     "batch_size": 32,
-    "batch_size_eval": 64,
+    "batch_size_eval": 32,
     "shuffle": true,
     "test_mode": false
   },
   "log": {
-    "checkpoint_directory": "/system/user/moertenb/dili/src/CNV/log/checkpoints/defaults/",
-    "summary_directory": "/system/user/moertenb/dili/src/CNV/log/summaries/defaults/",
+    "checkpoint_directory": "/publicwork/students/moertenb/dili/src/CNV/log/checkpoints",
+    "summary_directory": "/publicwork/students/moertenb/dili/src/CNV/log/summaries",
+    "log_dir": "/publicwork/students/moertenb/dili/log/",
     "overwrite": true
   },
   "data": {
-    "csv_file": "/system/user/moertenb/dili/src/CNV/data/dilirank_cellpainting_labels.csv",
-    "root_dir": "/system/user/moertenb/cellpainting",
+    "csv_file": "/publicwork/students/moertenb/data_FINAL/dilirank_wo_test_cluster.csv",
+    "descr_file": "/publicwork/students/moertenb/data_FINAL/descr_all.csv",
+    "npzs_file": "/publicwork/students/moertenb/data_FINAL/npzs_inchi_reduced_dilirank.csv",
+
+    "root_dir": "/publicdata/cellpainting/npzs/chembl24",
     "file_ext": ".npz",
-    "smiles_csv_file": "/system/user/moertenb/dili/src/CNV/data/dili_rank_cluster.csv"
+
+    "smiles_csv_file": "/publicwork/students/moertenb/data_FINAL/dilirank_wo_test_cluster.csv",
+    "descr_image_file": "/publicwork/students/moertenb/data_FINAL/FINAL_dilirank_wo_test_descr.csv",
+    "descr_csv_file": "/publicwork/students/moertenb/data_FINAL/dilirank_wo_test_cluster.csv",
+
+
+    "pretrained_gapnet": "/publicwork/students/moertenb/dili/checkpoints/checkpoint.pth.tar",
+    "eval_col_train": "vnctr",
+    "eval_col_test": "DILI",
+    "eval_col": "vnctr",
+    "label_format": "binary",
+
+    "csv_file_test": "/publicwork/students/moertenb/cellpainting_tables/nctr_samplekey.csv"
   }
 }

@@ -3,22 +3,32 @@
     "window_offset": 4
   },
   "optimiser": {
-    "learning_rate": 1e-3
+    "learning_rate": 1e-3,
+    "learning_rate_gapnet": 1e-4,
+    "lr_scheduler": false
   },
   "architecture": {
     "fc_layers": 2,
     "fc_unit_1": 128,
     "fc_unit_2": 32,
+    "fc_dropout": 0.8,
+    "fc_hidden_dims": [128, 32],
+
     "input_dropout": 0,
     "lstm_hidden_dim": 64,
     "lstm_num_layers": 2,
     "lstm_dropout": 0.8,
-    "lstm_sliding_window": 3
-
+    "lstm_sliding_window": 3,
+    "feature_extract": false,
+    "model_type": "descr",
+    "_comment_model_type": ["descr", "descr_gap", "smiles", "smiles_gap", "gapnet"]
   },
   "run": {
+    "checkpoint_file": false,
     "seed": 42,
     "cuda": true,
+    "gpu": 1,
+    "device": "cpu",
     "epochs": 100,
     "early_stop": 10,
     "evaluation_interval": 1,
@@ -31,11 +41,23 @@
     "weight_classes_deleted": false
   },
   "data": {
-    "csv_file": "/Users/Moerti/AA_projects/DILI/src/CNV/data/dilirank_cellpainting_labels.csv",
+    "csv_file": "/Users/Moerti/AA_projects/DILI/src/CNV/data/dilirank_wo_test_cluster.csv",
     "root_dir": "/Users/Moerti/AA_projects/DILI/src/CNV/data/images",
+    "descr_image_file": "/Users/Moerti/AA_projects/DILI/data/FINAL_dilirank_wo_test_descr.csv",
     "file_ext": ".npz",
+    "npzs_file": "/Users/Moerti/AA_projects/DILI/src/CNV/data/npzs_inchi_reduced.csv",
 
-    "smiles_csv_file": "/Users/Moerti/AA_projects/DILI/src/CNV/data/dili_rank_cluster.csv",
+    "smiles_csv_file": "/Users/Moerti/AA_projects/DILI/data/dilirank_wo_test_cluster.csv",
+    "descr_csv_file": "/Users/Moerti/AA_projects/DILI/data/dilirank_wo_test_cluster.csv",
+    "descr_file": "/Users/Moerti/AA_projects/DILI/data/FINAL_dilirank_wo_test_descr.csv",
+    "pretrained_gapnet": "/Users/Moerti/AA_projects/DILI/checkpoints/checkpoint.pth.tar",
+
+    "csv_file_test": "/Users/Moerti/AA_projects/DILI/src/CNV/data/nctr_samplekey.csv",
+    "eval_col_train": "vnctr",
+    "eval_col_test": "DILI",
+    "eval_col": "vnctr",
+    "label_format": "binary",
+    "_comment_label_format": "classification, ranked",
 
     "training_file_path": "resources/data/train_all.csv",
     "training_sample_separator": ";",

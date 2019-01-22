@@ -36,7 +36,7 @@ class BaseSupervisor(metaclass=ABCMeta):
     """
 
     @abstractmethod
-    def train(self, *args, **kwargs) -> Any:
+    def fit(self, *args, **kwargs) -> Any:
         pass
 
     @abstractmethod

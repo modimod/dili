@@ -3,6 +3,8 @@ from torch.utils.data import DataLoader #Subset
 from resources.subset import Subset
 import os
 import shutil
+import time
+import torch
 
 from tensorboardX import SummaryWriter
 
@@ -19,16 +21,20 @@ from net import BaseSupervisor, BaseTagger
 
 import numpy as np
 
+import copy
+
 
 class TransferLearningSupervisor(BaseSupervisor):
 
-	def __init__(self, settings, model_name, feature_extract=True):
+	def __init__(self, settings, model_name='gapnet', feature_extract=True):
 
 		self.settings = settings
 
 		self.tagger = None
 		self.dataset = None
 		self.len = None
+		self.checkpoint_dir = None
+		self.summary_dir = None
 
 		self.model_name = model_name
 
@@ -50,10 +56,10 @@ class TransferLearningSupervisor(BaseSupervisor):
 		for train_idx, val_idx in splitter.split(range(self.len)):
 			# Subset
 			subset_train = Subset(self.dataset, train_idx)
-			subset_train.dataset.transform = self.transforms['train']
+			subset_train.dataset.transform = self.transforms['train'] if self.model_name != 'gapnet' else None
 
 			subset_valid = Subset(self.dataset, val_idx)
-			subset_train.dataset.transform = self.transforms['val']
+			subset_train.dataset.transform = self.transforms['val'] if self.model_name != 'gapnet' else None
 
 			loader_train = DataLoader(dataset=subset_train, batch_size=self.settings.run.batch_size, shuffle=True)
 			loader_valid = DataLoader(dataset=subset_valid, batch_size=self.settings.run.batch_size_eval, shuffle=False)
@@ -61,69 +67,61 @@ class TransferLearningSupervisor(BaseSupervisor):
 			yield loader_train, loader_valid
 
 	def train(self, folds=3):
-		'''
-		:param folds:
-		:return:
-		'''
-
-		kf = KFold(n_splits=folds)
-
-		fold_losses = list()
+		kf = KFold(n_splits=folds, shuffle=True)
 
 		for i, (loader_train, loader_valid) in enumerate(self.fold_gen(kf)):
-			print('Fold: [{}/{}]'.format(i+1,folds))
+			print('\nFold: [{}/{}]\n'.format(i+1,folds))
 
-			epoch_losses = list()
+			self.tagger.reset()
 
-			for epoch in tqdm(range(1, self.settings.run.epochs+1, 1),
-							desc=r'Epochs', unit=r'ep', leave=False):
+			self.not_better, self.best_model_loss, self.best_tagger = 0, np.inf, self.tagger
 
-				epoch_loss = self.tagger.fit(loader_train, track_loss=True)
-				print('Fold: {} Epoch {}: Loss Train: {}'.format(i+1, epoch+1, epoch_loss))
-				epoch_losses.append(epoch_loss)
+			for epoch in range(self.settings.run.epochs):
 
-				self.performance_train.loss = epoch_loss
+				train_loss = self.tagger.fit(loader_train, track_loss=True)
+				self.summary_writer.add_scalar('fold{}/train_loss'.format(i+1), train_loss, epoch+1)
 
-				self._evaluate(loader_train, loader_valid, global_step=(i+1)*epoch)
+				valid_loss, valid_acc = self._evaluate(loader_train, loader_valid, fold=i, epoch=epoch)
+				self.summary_writer.add_scalar('fold{}/valid_loss'.format(i+1), valid_loss, epoch+1)
+				self.summary_writer.add_scalar('fold{}/valid_acc'.format(i+1), valid_acc, epoch+1)
 
-				# TODO early stop
+				print('Fold: {} Epoch: {} Loss Train: {} Loss Valid: {} Acc Valid: {}'.format(i + 1, epoch + 1, train_loss,
+																					valid_loss, valid_acc))
 
-			fold_losses.append(epoch_losses)
+				self._save_model(text='fold{}_epoch_{}'.format(i + 1, epoch + 1), best=False)
+
+				# early stopping
+				if self.settings.run.early_stop and epoch > 0:
+					if self._test_early_stop(valid_loss, epoch+1):
+						break
+
+
 
 			# add acc on validation set after last epoch to acc-list
-			self.accs_fold.append(self.performance_valid.acc)
+			self.acc_valid_fold.append(self.performance_valid.acc)
 
-		print('mean fold accuracy on validation set: {}'.format(sum(self.accs_fold)/folds))
+	def _evaluate(self, loader_train, loader_valid, fold, epoch):
 
-	def _evaluate(self, loader_train, loader_valid, global_step):
+		self.performance_valid = self.tagger.evaluate(loader_valid, info='valid', eval_col=self.settings.data.eval_col)
 
-		self.performance_valid = self.tagger.evaluate(loader_valid, info='valid')
-
-		print('Loss Valid: {}'.format(self.performance_valid.loss))
-		print('Acc Valid: {}'.format(self.performance_valid.acc))
-
-		self.summary_writer.add_scalars(
-			main_tag=r'loss', tag_scalar_dict={
-				r'training': self.performance_train.loss,
-				r'validation': self.performance_valid.loss},
-			global_step=global_step)
-
-		self.summary_writer.add_scalars(
-			main_tag=r'accuracy', tag_scalar_dict={
-				# r'training': self.performance_train.acc,
-				r'validation': self.performance_valid.acc},
-			global_step=global_step)
-
+		return self.performance_valid.loss, self.performance_valid.acc
 
 	def reset (self) -> None:
 		"""
 		Reset tagger.
 		"""
-		#torch.manual_seed(seed=self.__settings.run.seed)
+# 		torch.manual_seed(seed=self.__settings.run.seed)
 
-		self._prepare_directory(directory=self.settings.log.checkpoint_directory)
-		self._prepare_directory(directory=self.settings.log.summary_directory)
-		self.summary_writer = SummaryWriter(log_dir=self.settings.log.summary_directory)
+		curr_time = str(int(time.time()))
+		print('log directory: {}\n\n'.format(curr_time))
+		base_dir = os.path.join(self.settings.log.log_dir, curr_time)
+
+		self.checkpoint_dir = os.path.join(base_dir, 'checkpoint')
+		self.summary_dir = os.path.join(base_dir, 'summary')
+
+		self._prepare_directory(directory=self.checkpoint_dir)
+		self._prepare_directory(directory=self.summary_dir)
+		self.summary_writer = SummaryWriter(log_dir=self.summary_dir)
 
 		self.dataset = self._create_dataset()
 
@@ -139,7 +137,13 @@ class TransferLearningSupervisor(BaseSupervisor):
 
 		self.accs_fold = list()
 
-		self.transforms = get_data_transforms(self.tagger.input_size)
+		self.losses_train_fold = list()
+		self.losses_valid_fold = list()
+		self.acc_valid_fold = list()
+		self.learning_rates_fold = list()
+
+
+		self.transforms = get_data_transforms(self.tagger.input_size) if self.model_name != 'gapnet' else None
 
 	def _prepare_directory(self, directory: str) -> None:
 		"""
@@ -164,6 +168,29 @@ class TransferLearningSupervisor(BaseSupervisor):
 			mode_test=self.settings.run.test_mode)
 
 
+	def _test_early_stop(self, loss_valid, epoch):
+		if loss_valid < self.best_model_loss:
+			self.best_model_loss = loss_valid
+			self.best_tagger = copy.deepcopy(self.tagger)
 
+			self._save_model(best=True)
 
+			print('\n\nNew Best Model after Epoch {}!\n\n'.format(epoch))
+			self.not_better = 0
+		else:
+			self.not_better += 1
+			print('No new best model for [{}/{}] epochs\n'.format(self.not_better, self.settings.run.early_stop))
 
+			if self.not_better >= self.settings.run.early_stop:
+				self.tagger = copy.deepcopy(self.best_tagger)
+				return True
+
+		return False
+
+	def _save_model(self, text='', best=False):
+		file_name = 'best_model.pt' if best else text+'.pt'
+
+		checkpoint_file = os.path.join(self.checkpoint_dir, file_name)
+
+		with open(checkpoint_file, mode=r'wb') as f:
+			torch.save(obj=self.tagger, f=f)

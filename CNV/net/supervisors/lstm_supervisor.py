@@ -11,17 +11,17 @@ from tqdm import tqdm
 
 from utils.metrics import PerformanceEntry
 
-from net.taggers.lstm_tagger import LSTMTagger
+from net.taggers.lstm_tagger import SmilesTagger
 
 from net import BaseSupervisor, BaseTagger
 
 import time
 
-from resources.smiles_dataset import collate_fn
-
 import numpy as np
 
 import copy
+
+from torch.optim.lr_scheduler import StepLR, ReduceLROnPlateau
 
 
 class LSTMSupervisor(BaseSupervisor):
@@ -67,70 +67,67 @@ class LSTMSupervisor(BaseSupervisor):
 
 		kf = GroupKFold(n_splits=folds)
 
-		fold_losses = list()
-		fold_losses_valid = list()
-		fold_accs = list()
-
-
-
 		for i, (loader_train, loader_valid) in enumerate(self.fold_gen(kf)):
 			print('\nFold: [{}/{}]\n'.format(i+1,folds))
 
-			epoch_losses = list()
-			epoch_losses_valid = list()
-			epoch_accs = list()
+			self.tagger.reset()
+			self._init_scheduler()
+
+
+			losses_train = list()
+			losses_valid = list()
+			learning_rates = list()
 
 			self.not_better = 0
 			self.best_model_loss = np.inf
 			self.best_tagger = self.tagger
 
 			for epoch in range(self.settings.run.epochs):
+				self.scheduler.step()
+				learning_rates.append(self.scheduler.get_lr())
 
-				epoch_loss = self.tagger.fit(loader_train, track_loss=True)
+				train_loss = self.tagger.fit(loader_train, track_loss=True)
 
-				print('Fold: {} Epoch {}: Loss Train: {}'.format(i+1, epoch+1, epoch_loss))
-				epoch_losses.append(epoch_loss)
+				print('Fold: {} Epoch {}: Loss Train: {}'.format(i+1, epoch+1, train_loss))
+				losses_train.append(train_loss)
 
-				self.performance_train.loss = epoch_loss
+				valid_loss = self._evaluate(loader_train, loader_valid, global_step=(i+1)*epoch)
+				losses_valid.append(valid_loss)
 
-				loss_valid = self._evaluate(loader_train, loader_valid, global_step=(i+1)*epoch)
-
-				# TODO early stop
+				#self.scheduler.step(valid_loss)
 
 				# early stopping
 				if self.settings.run.early_stop and epoch > 0:
-					if self._test_early_stop(loss_valid, epoch+1):
+					if self._test_early_stop(valid_loss, epoch+1):
 						break
 
-			fold_losses.append(epoch_losses)
+
+
+			self.losses_train_fold.append(losses_train)
+			self.losses_valid_fold.append(losses_valid)
+			self.learning_rates_fold.append(learning_rates)
 
 			# add acc on validation set after last epoch to acc-list
-			self.accs_fold.append(self.performance_valid.acc)
-
-		print('mean fold accuracy on validation set: {}'.format(sum(self.accs_fold)/folds))
-		print('loss fold x epoch', fold_losses)
-
-		print(fo)
-
+			self.acc_valid_fold.append(self.performance_valid.acc)
 
 	def _evaluate(self, loader_train, loader_valid, global_step):
 
 		self.performance_valid = self.tagger.evaluate(loader_valid, info='valid')
 
-		print('Loss Valid: {}'.format(self.performance_valid.loss))
-		print('Acc Valid: {}'.format(self.performance_valid.acc))
+		print('\nLoss Valid: {}'.format(self.performance_valid.loss))
+		print('Acc Valid: {}\n'.format(self.performance_valid.acc))
 
-		self.summary_writer.add_scalars(
-			main_tag=r'loss', tag_scalar_dict={
-				r'training': self.performance_train.loss,
-				r'validation': self.performance_valid.loss},
-			global_step=global_step)
-
-		self.summary_writer.add_scalars(
-			main_tag=r'accuracy', tag_scalar_dict={
-				# r'training': self.performance_train.acc,
-				r'validation': self.performance_valid.acc},
-			global_step=global_step)
+		# self.summary_writer.add_scalars(
+		# 	main_tag=r'loss', tag_scalar_dict={
+		# 		r'training': self.performance_train.loss,
+		# 		r'validation': self.performance_valid.loss},
+		# 	global_step=global_step)
+		#
+		# self.summary_writer.add_scalars(
+		# 	main_tag=r'accuracy', tag_scalar_dict={
+		# 		# r'training': self.performance_train.acc,
+		# 		r'validation': self.performance_valid.acc},
+		# 	global_step=global_step)
 
 		return self.performance_valid.loss
 
@@ -160,6 +157,15 @@ class LSTMSupervisor(BaseSupervisor):
 		self.performance_valid = PerformanceEntry()
 
 		self.accs_fold = list()
+
+		self.losses_train_fold = list()
+		self.losses_valid_fold = list()
+		self.acc_valid_fold = list()
+		self.learning_rates_fold = list()
+
+	def _init_scheduler(self):
+		self.scheduler = StepLR(self.tagger.optimizer, step_size=10, gamma=0.1)
+		#self.scheduler = ReduceLROnPlateau(self.tagger.optimizer, 'min')
 
 	def _prepare_directory(self, directory: str) -> None:
 		"""

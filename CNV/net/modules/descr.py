@@ -3,34 +3,34 @@ import torch
 from torch.nn import Linear, BCEWithLogitsLoss
 from torch.nn.utils.rnn import pack_padded_sequence,pad_packed_sequence
 
-from net.modules.base_modules import LSTMModule
+from net.modules.base_modules import FCModule, FCDynamicModule
 from net.modules.MultiOuts import MultiOuts, MultiOutsBinary
-from utils.constants import pandas_cols, tasks, tasks_rank, tasks_idx, smiles_alphabet
+from utils.constants import pandas_cols, tasks_rank, tasks_idx, smiles_alphabet, descr_dim, tasks
 
 
-class SmilesModule(nn.Module):
+class DescrModule(nn.Module):
 	def __init__(self, settings):
 		super().__init__()
 
 		self.settings = settings
 
-		self.lstm = LSTMModule(
-			input_dim=self.settings.architecture.lstm_sliding_window * len(smiles_alphabet),
-			hidden_dim=self.settings.architecture.lstm_hidden_dim,
-			num_layers=self.settings.architecture.lstm_num_layers,
-			dropout=self.settings.architecture.lstm_dropout)
+		self.fc = FCDynamicModule(
+			input_dim=descr_dim,
+			hidden_dims=self.settings.architecture.fc_hidden_dims,
+			dropout=self.settings.architecture.fc_dropout
+		)
 
 		# multiout
-		self.multiout_in = self.settings.architecture.lstm_hidden_dim
+		self.multiout_in = self.fc.sizes[-1]
 		self.multiout = MultiOuts(self.multiout_in)
 
 		# loss
 		self.loss = self.multiout.masked_loss
 
-	def forward (self, smiles, lengths):
-		lstm_out = self.lstm(smiles, lengths)
+	def forward (self, descr):
+		fc_out = self.fc(descr)
 
-		return self.multiout(lstm_out)
+		return self.multiout(fc_out)
 
 
 def masked_loss_binary(outputs, targets, spec_target=None):
@@ -48,19 +48,21 @@ def masked_loss_binary(outputs, targets, spec_target=None):
 	return loss(outputs, targets)
 
 
-class SmilesBinaryModule(SmilesModule):
+class DescrBinaryModule(DescrModule):
 	def __init__(self, settings):
 		super().__init__(settings)
 
-		self.multiout = MultiOutsBinary(self.multiout_in, len(tasks))
+		self.multiout = MultiOutsBinary(self.multiout_in, len(pandas_cols))
 		self.loss = self.multiout.loss
 
 
-class SmilesRankedModule(SmilesModule):
+class DescrRankedModule(DescrModule):
 	def __init__(self, settings):
 		super().__init__(settings)
 
 		self.multiout = MultiOutsBinary(self.multiout_in, sum(tasks_rank.values()))
 		self.loss = self.multiout.loss
+
+
 
 
