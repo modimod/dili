@@ -33,7 +33,7 @@ class LSTMGapnetModule(nn.Module):
 		# loss
 		self.loss = self.multiout.masked_loss
 
-	def forward (self, smiles, lengths, images):
+	def forward (self, smiles, images, lengths):
 		lstm_out = self.lstm(smiles, lengths)
 		gapnet_out = self.gapnet(images)
 

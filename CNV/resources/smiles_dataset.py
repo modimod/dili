@@ -107,7 +107,7 @@ class SmilesDataset(BaseDataset):
 		# stack labels
 		labels = torch.stack(labels, 0)
 
-		return features, labels, lengths
+		return {'features': features, 'lengths': lengths, 'labels': labels}
 
 
 class SmilesBinaryDS(SmilesDataset):

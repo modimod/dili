@@ -37,13 +37,6 @@ class DataSettings(object):
 
 		self.pretrained_gapnet = settings[r'pretrained_gapnet']
 
-		self.training_file_path = settings[r'training_file_path']
-		self.training_sample_separator = settings[r'training_sample_separator']
-		self.training_distinct_samples = settings[r'training_distinct_samples']
-		self.evaluation_file_path = settings[r'evaluation_file_path']
-		self.evaluation_sample_separator = settings[r'evaluation_sample_separator']
-		self.evaluation_distinct_samples = settings[r'evaluation_distinct_samples']
-
 
 class LogSettings(object):
 	"""
@@ -102,9 +95,6 @@ class ArchitectureSettings(object):
 		:param settings: settings dictionary to initialise from
 		"""
 		self.input_dropout = settings[r'input_dropout']
-		#self.fc_layers = settings[r'fc_layers']
-		self.fc_unit_1 = settings[r'fc_unit_1']
-		self.fc_unit_2 = settings[r'fc_unit_2']
 		self.fc_hidden_dims = settings[r'fc_hidden_dims']
 		self.fc_dropout = settings[r'fc_dropout']
 		self.feature_extract = settings[r'feature_extract']

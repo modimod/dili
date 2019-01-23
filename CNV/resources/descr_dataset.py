@@ -57,7 +57,7 @@ class DescrDataset(BaseDataset):
 		# stack labels
 		labels = torch.stack(labels, 0)
 
-		return descr, labels
+		return {'features': descr, 'labels': labels}
 
 
 class DescrBinaryDS(DescrDataset):

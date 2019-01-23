@@ -8,9 +8,6 @@
     "lr_scheduler": false
   },
   "architecture": {
-    "fc_layers": 2,
-    "fc_unit_1": 128,
-    "fc_unit_2": 32,
     "fc_dropout": 0.8,
     "fc_hidden_dims": [128, 32],
 
@@ -59,12 +56,6 @@
     "label_format": "binary",
     "_comment_label_format": "classification, ranked",
 
-    "training_file_path": "resources/data/train_all.csv",
-    "training_sample_separator": ";",
-    "training_distinct_samples": true,
-    "evaluation_file_path": "resources/data/eval_all.csv",
-    "evaluation_sample_separator": ";",
-    "evaluation_distinct_samples": true
   },
   "log": {
     "checkpoint_directory": "log/checkpoints/defaults/",

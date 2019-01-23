@@ -34,7 +34,7 @@ class DescrCellpaintingDataset(BaseDataset):
 		super().__init__(csv_file, eval)
 
 		if mode_test:
-			self.data_file = self.data_file[:100]
+			self.data_file = self.data_file.sample(100)
 			self.clusters = self.data_file['cluster']
 			self.len = len(self.data_file)
 
@@ -115,7 +115,7 @@ class DescrCellpaintingDataset(BaseDataset):
 		# stack labels
 		labels = torch.stack(labels, 0)
 
-		return descr, images, labels
+		return {'features': [descr, images], 'labels': labels}
 
 
 class DescrCellpaintingBinaryDS(DescrCellpaintingDataset):

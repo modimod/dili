@@ -1,8 +1,5 @@
 {
   "architecture": {
-    "fc_layers": 2,
-    "fc_unit_1": 128,
-    "fc_unit_2": 32,
     "fc_hidden_dims": [256, 128, 64, 32],
     "fc_dropout": 0,
     "input_dropout": 0,
@@ -11,7 +8,7 @@
     "lstm_dropout": 0.8,
     "lstm_sliding_window": 3,
     "feature_extract": false,
-    "model_type": "gapnet",
+    "model_type": "descr",
     "_comment_model_type": ["descr", "descr_gap", "smiles", "smiles_gap", "gapnet"]
   },
   "optimiser": {
@@ -37,11 +34,10 @@
   "data": {
     "csv_file": "/Users/Moerti/AA_projects/DILI/data/dilirank_wo_test_cluster.csv",
     "descr_file": "/Users/Moerti/AA_projects/DILI/data/descr_all.csv",
-    "npzs_file": "/Users/Moerti/AA_projects/DILI/data/npzs_inchi_reduced_dilirank.csv",
+    "npzs_file": "/Users/Moerti/AA_projects/DILI/data/npzs_inchi_reduced.csv",
 
     "root_dir": "/Users/Moerti/AA_projects/DILI/src/CNV/data/images",
     "file_ext": ".npz",
-
 
     "csv_file_test": "/Users/Moerti/AA_projects/DILI/src/CNV/data/nctr_samplekey.csv",
     "label_format": "binary"

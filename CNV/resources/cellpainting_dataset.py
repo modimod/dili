@@ -36,7 +36,7 @@ class CellpaintingDataset(BaseDataset):
 
 
 		if mode_test:
-			self.npzs_file = self.npzs_file[:100]
+			self.npzs_file = self.npzs_file.sample(100)
 			self.clusters = np.arange(len(self.npzs_file))
 			self.len = len(self.npzs_file)
 
@@ -89,7 +89,7 @@ class CellpaintingDataset(BaseDataset):
 		# stack labels
 		labels = torch.stack(labels, 0)
 
-		return images, labels
+		return {'features': images, 'labels': labels}
 
 class CellpaintingBinaryDS(CellpaintingDataset):
 
