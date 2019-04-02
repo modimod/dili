@@ -21,7 +21,7 @@ class CellpaintingDataset(BaseDataset):
 		"""
 		Args:
 			csv_file (string): Path to the csv file with annotations.
-			npzs_file (string): Path to csv file that connects inchikey and sample-keys/images (npzs_inchi_reduced.csv)
+			npzs_file (string): Path to csv file that connects inchikey and sample-keys/images (npzs_inchi_reduced_dilirank.csv)
 			root_dir (string): Directory with all the images.
 			file_ext (string): File extension
 			transform (callable, optional): Optional transform to be applied
@@ -30,6 +30,8 @@ class CellpaintingDataset(BaseDataset):
 		super().__init__(csv_file, eval)
 
 		self.npzs_file = pd.read_csv(npzs_file)
+		self.len = len(self.npzs_file)
+		self.clusters = np.arange(self.len)
 
 		if mode_test:
 			self.npzs_file['SAMPLE_KEY'] = '26247-P17-5'

@@ -4,7 +4,7 @@ from torch.nn import Linear, BCEWithLogitsLoss
 from torch.nn.utils.rnn import pack_padded_sequence,pad_packed_sequence
 
 from net.modules.base_modules import FCModule, FCDynamicModule
-from net.modules.MultiOuts import MultiOuts, MultiOutsBinary
+from net.modules.MultiOuts import MultiOuts, MultiOutsBinary, MultiOutsMSE
 from utils.constants import pandas_cols, tasks_rank, tasks_idx, smiles_alphabet, descr_dim, tasks
 
 
@@ -63,6 +63,12 @@ class DescrRankedModule(DescrModule):
 		self.multiout = MultiOutsBinary(self.multiout_in, sum(tasks_rank.values()))
 		self.loss = self.multiout.loss
 
+class DescrMSEModule(DescrModule):
+	def __init__(self, settings):
+		super().__init__(settings)
+
+		self.multiout = MultiOutsMSE(self.multiout_in, len(pandas_cols))
+		self.loss = self.multiout.loss
 
 
 

@@ -30,7 +30,7 @@ class SmilesDataset(BaseDataset):
 
 		# LABELS
 		if self.eval:
-			labels = self.data_file['DILI'].iloc[idx].astype(np.float)
+			labels = self.data_file[['DILI']].iloc[idx].values.astype(np.float)
 		else:
 			labels = self.data_file[pandas_cols].iloc[idx].values.astype(np.float)
 		labels = torch.from_numpy(labels).to(dtype=torch.float)
@@ -115,7 +115,7 @@ class SmilesBinaryDS(SmilesDataset):
 	def __getitem__(self, idx):
 		sample = super().__getitem__(idx)
 
-		sample['labels'] = labels_to_binary(sample['labels'])
+		sample['labels'] = labels_to_binary(sample['labels'], eval=self.eval)
 
 		return sample
 

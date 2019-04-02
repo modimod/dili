@@ -31,7 +31,7 @@ class DescrCellpaintingDataset(BaseDataset):
 			transform (callable, optional): Optional transform to be applied
 				on a sample.
 		"""
-		super().__init__(csv_file, eval)
+		super().__init__(csv_file, eval, transform)
 
 		if mode_test:
 			self.data_file = self.data_file.sample(100)
@@ -47,14 +47,17 @@ class DescrCellpaintingDataset(BaseDataset):
 
 		self.root_dir = root_dir
 		self.file_ext = file_ext
-		self.transform = transform
 
 	def __getitem__(self, idx):
 		inchikey = self.data_file['inchikey'].iloc[idx]
 
 		# DESCR
-		descr = self.descr_file[self.descr_file['inchikey'] == inchikey].iloc[0, 3:].values
-		descr = torch.from_numpy(descr.astype(np.float32))
+		descr = self.descr_file[self.descr_file['inchikey'] == inchikey].iloc[0, 3:].values.astype(np.float32)
+
+		if self.transform:
+			descr = self.transform(descr)
+
+		descr = torch.from_numpy(descr)
 
 		# IMAGE
 		sample_keys = self.npzs_file[self.npzs_file['INCHIKEY'] == inchikey]
@@ -87,10 +90,27 @@ class DescrCellpaintingDataset(BaseDataset):
 
 		sample = {'descr': descr, 'image': image, 'labels': labels}
 
-		if self.transform:
-			sample = self.transform(sample)
-
 		return sample
+
+	def get_mean_std(self, indices=None):
+		features = list()
+
+		if indices is None:
+			indices = range(self.len)		# for whole dataset
+
+		for i,idx in enumerate(indices):
+			inchikey = self.data_file['inchikey'].iloc[idx]
+
+			descr = self.descr_file[self.descr_file['inchikey'] == inchikey].iloc[0, 3:].values.astype(np.float32)
+
+			features.append(descr)
+
+		features = np.stack(features)
+
+		mean = features.mean(axis=0)
+		std = features.std(axis=0)
+
+		return mean, std
 
 	def transform_prediction(self, y_pred, y_true, eval_col='vnctr'):
 		return transform_prediction_classification(y_pred=y_pred, y_true=y_true, eval_col=eval_col)

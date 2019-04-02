@@ -26,7 +26,9 @@ class PerformanceEntry(object):
 		self.__num_classes = num_classes
 		self.__loss = None
 		self.__cm = None
-		self.__auc = None # only for binary
+		self.__auc = None  # only for binary
+		self.__y_true = None  # only for binary
+		self.__y_score = None  # only for binary
 		self.reset()
 
 	def better_than(self, other):
@@ -108,7 +110,9 @@ class PerformanceEntry(object):
 			r'specificity_per_class': [_.astype(float) for _ in self.specificity_per_class],
 			r'f1score': self.f1score.astype(float),
 			r'f1score_per_class': [_.astype(float) for _ in self.f1score_per_class],
-			r'auc_score': self.__auc
+			r'auc_score': self.auc,
+			r'y_true': self.y_true.tolist(),
+			r'y_score': self.y_score.tolist()
 		})
 
 	def reset(self) -> None:
@@ -188,6 +192,16 @@ class PerformanceEntry(object):
 	def auc(self):
 		return self.__auc
 
+	@property
+	def y_true(self):
+		return self.__y_true
+
+	@property
+	def y_score(self):
+		return self.__y_score
+
 	def set_auc_scores (self, y_true, y_score):
+		self.__y_true = y_true
+		self.__y_score = y_score
 		self.__auc = roc_auc_score(y_true=y_true, y_score=y_score)
 

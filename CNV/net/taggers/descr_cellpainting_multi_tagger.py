@@ -6,23 +6,23 @@ from utils.constants import tasks_label_count
 
 from net import BaseTagger
 from net.taggers.general_tagger import GeneralTagger
-from net.modules.descr_gapnet import DescrGapnetModule, DescrGapnetBinaryModule, DescrGapnetRankedModule
+from net.modules.descr_gapnet_multi import DescrGapnetMultiModule, DescrGapnetMultiBinaryModule, DescrGapnetMultiRankedModule
 import os
 from sklearn.metrics import confusion_matrix
 
 from utils.multiple_optimizer import MultipleOptimizer
 
 
-class DescrCellpaintingTagger(GeneralTagger):
+class DescrCellpaintingMultiTagger(GeneralTagger):
 
 	def _init_model(self):
 
 		if self.settings.data.label_format == 'binary':
-			m = DescrGapnetBinaryModule
+			m = DescrGapnetMultiBinaryModule
 		elif self.settings.data.label_format == 'ranked':
-			m = DescrGapnetRankedModule
+			m = DescrGapnetMultiRankedModule
 		else:
-			m = DescrGapnetModule
+			m = DescrGapnetMultiModule
 
 		self.model = m(self.settings, feature_extract=self.settings.architecture.feature_extract)
 		self._model_to_device()

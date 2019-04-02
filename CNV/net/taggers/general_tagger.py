@@ -1,13 +1,12 @@
-from torch.optim import Adam
 from utils.metrics import PerformanceEntry
 import torch
-from tqdm import tqdm
+from torch import nn
 from utils.constants import tasks_label_count
 
 from net import BaseTagger
-from net.modules.lstm_gapnet import LSTMGapnetModule, LSTMGapnetBinaryModule, LSTMGapnetRankedModule
 import os
 from sklearn.metrics import confusion_matrix
+from resources.subset import Subset
 
 class GeneralTagger(BaseTagger):
 
@@ -28,6 +27,13 @@ class GeneralTagger(BaseTagger):
 	def _init_model(self):
 		pass
 
+	def _model_to_device(self):
+		if torch.cuda.device_count() > 1:
+			print("Let's use", torch.cuda.device_count(), "GPUs!")
+			self.model = nn.DataParallel(self.model)
+
+		self.model = self.model.to(device=self.device)
+
 	def _init_optimizer(self):
 		pass
 
@@ -46,8 +52,8 @@ class GeneralTagger(BaseTagger):
 			if not isinstance(features, list):
 				features = [features]
 
-			for f in features:
-				f.to(device=self.device)
+			for j in range(len(features)):
+				features[j] = features[j].to(device=self.device)
 
 			labels = labels.to(device=self.device)
 
@@ -56,7 +62,10 @@ class GeneralTagger(BaseTagger):
 			else:
 				preds = self.model(*features)
 
-			loss = self.model.loss(preds, labels)
+			if isinstance(self.model, nn.DataParallel):
+				loss = self.model.module.loss(preds, labels)
+			else:
+				loss = self.model.loss(preds, labels)
 
 			losses.append(loss.item())
 
@@ -68,8 +77,6 @@ class GeneralTagger(BaseTagger):
 
 			if i % 10 == 0 or (i+1) == len(dataloader):
 				print('Progress Fit: [{}/{}]'.format(i+1, len(dataloader)))
-
-		self.optimizer.zero_grad()
 
 		return sum(losses)/len(losses) if track_loss else None
 
@@ -95,8 +102,8 @@ class GeneralTagger(BaseTagger):
 				if not isinstance(features, list):
 					features = [features]
 
-				for f in features:
-					f.to(device=self.device)
+				for j in range(len(features)):
+					features[j] = features[j].to(device=self.device)
 
 				labels = labels.to(device=self.device)
 
@@ -105,26 +112,36 @@ class GeneralTagger(BaseTagger):
 				else:
 					preds = self.model(*features)
 
-				y_pred, y_true, y_score = dataloader.dataset.dataset.transform_prediction(
-					y_pred=preds,
-					y_true=labels,
-					eval_col=eval_col)
+				if isinstance(dataloader.dataset, Subset):
+					y_pred, y_true, y_score = dataloader.dataset.dataset.transform_prediction(
+						y_pred=preds,
+						y_true=labels,
+						eval_col=eval_col)
+				else:
+					y_pred, y_true, y_score = dataloader.dataset.transform_prediction(
+						y_pred=preds,
+						y_true=labels,
+						eval_col=eval_col)
 
 				if len(y_true) > 0:
-					cm = confusion_matrix(y_pred=y_pred, y_true=y_true, labels=list(range(self.num_classes)))
+					cm = confusion_matrix(y_pred=y_pred.cpu(), y_true=y_true.cpu(), labels=list(range(self.num_classes)))
 					performance.update_confusion_matrix(cm)
 
 					y_true_list.append(y_true)
 					y_score_list.append(y_score)
 
-				loss = self.model.loss(preds, labels, eval_col)
+				if isinstance(self.model, nn.DataParallel):
+					loss = self.model.module.loss(preds, labels, eval_col)
+				else:
+					loss = self.model.loss(preds, labels, eval_col)
+
 				performance.update_loss(loss.item())
 
 		if self.settings.data.label_format == 'binary':
 			y_true_all = torch.cat(y_true_list, dim=0)
 			y_score_all = torch.cat(y_score_list, dim=0)
 
-			performance.set_auc_scores(y_true=y_true_all, y_score=y_score_all)
+			performance.set_auc_scores(y_true=y_true_all.cpu(), y_score=y_score_all.cpu())
 
 		return performance
 

@@ -10,13 +10,14 @@ from resources.utils import chain_predictions_binary
 from resources.utils import chain_predictions_classification
 from resources.utils import labels_to_binary
 from resources.utils import labels_to_ranked
+from resources.utils import transform_prediction_mse
 
 from resources.base_dataset import BaseDataset
 
 class DescrDataset(BaseDataset):
 
-	def __init__(self, csv_file, descr_file, eval=None):
-		super().__init__(csv_file, eval)
+	def __init__(self, csv_file, descr_file, eval=None, transform=None):
+		super().__init__(csv_file, eval, transform)
 
 		self.descr_file = pd.read_csv(descr_file)
 
@@ -25,12 +26,16 @@ class DescrDataset(BaseDataset):
 		inchikey = self.data_file['inchikey'].iloc[idx]
 
 		# DESCR
-		descr = self.descr_file[self.descr_file['inchikey'] == inchikey].iloc[0, 3:].values
-		descr = torch.from_numpy(descr.astype(np.float32))
+		descr = self.descr_file[self.descr_file['inchikey'] == inchikey].iloc[0, 3:].values.astype(np.float32)
+
+		if self.transform:
+			descr = self.transform(descr)
+
+		descr = torch.from_numpy(descr)
 
 		# LABELS
 		if self.eval:
-			labels = self.data_file['DILI'].iloc[idx].astype(np.float)
+			labels = self.data_file[['DILI']].iloc[idx].values.astype(np.float)
 		else:
 			labels = self.data_file[pandas_cols].iloc[idx].values.astype(np.float)
 		labels = torch.from_numpy(labels).to(dtype=torch.float)
@@ -38,6 +43,26 @@ class DescrDataset(BaseDataset):
 		sample = {'descr': descr, 'labels': labels}
 
 		return sample
+
+	def get_mean_std(self, indices=None):
+		features = list()
+
+		if indices is None:
+			indices = range(self.len)		# for whole dataset
+
+		for i,idx in enumerate(indices):
+			inchikey = self.data_file['inchikey'].iloc[idx]
+
+			descr = self.descr_file[self.descr_file['inchikey'] == inchikey].iloc[0, 3:].values.astype(np.float32)
+
+			features.append(descr)
+
+		features = np.stack(features)
+
+		mean = features.mean(axis=0)
+		std = features.std(axis=0)
+
+		return mean, std
 
 	def transform_prediction(self, y_pred, y_true, eval_col='vnctr'):
 		return transform_prediction_classification(y_pred=y_pred, y_true=y_true, eval_col=eval_col)
@@ -65,7 +90,7 @@ class DescrBinaryDS(DescrDataset):
 	def __getitem__(self, idx):
 		sample = super().__getitem__(idx)
 
-		sample['labels'] = labels_to_binary(sample['labels'])
+		sample['labels'] = labels_to_binary(sample['labels'], eval=self.eval)
 
 		return sample
 
@@ -89,4 +114,13 @@ class DescrRankedDS(DescrDataset):
 		return transform_prediction_ranked(y_pred=y_pred, y_true=y_true, eval_col=eval_col)
 
 	def chain_predictions (self, preds):
+		return chain_predictions_binary(preds)
+
+
+class DescrMSEDS(DescrDataset):
+
+	def transform_prediction(self, y_pred, y_true, eval_col='vnctr'):
+		return transform_prediction_mse(y_pred=y_pred, y_true=y_true, eval_col=eval_col)
+
+	def chain_predictions(self, preds):
 		return chain_predictions_binary(preds)

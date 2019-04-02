@@ -1,16 +1,10 @@
-from net.supervisors import SmilesCellpaintingSupervisor, SmilesSupervisor, DescrCellpaintingSupervisor, DescrSupervisor
+from net.supervisors import DescrCellpaintingMultiSupervisor
 from settings import Settings
 import argparse
 import os
 import torch
 from itertools import product
 
-supervisor_dict = {
-	'descr': DescrSupervisor,
-	'descr_gap': DescrCellpaintingSupervisor,
-	'smiles': SmilesSupervisor,
-	'smiles_gap': SmilesCellpaintingSupervisor
-}
 
 if __name__=='__main__':
 
@@ -43,33 +37,38 @@ if __name__=='__main__':
 
 	# best 3 descr hyperparams after hyperparams tuning
 	# for binary
-	# params = [
-	# 	(0.0001, [512, 256, 128, 64], 0.0),
-	# 	(0.001, [256, 128], 0.0),
-	# 	(0.001, [512, 256, 128], 0.0)]
+	params = [
+		(0.0001, [512, 256, 128, 64], 0.0),
+		(0.001, [256, 128], 0.0),
+		(0.001, [512, 256, 128], 0.0)]
 
-	# params = [
-	# 	(0.0001, [256, 128, 64], 0.0),
-	# 	(0.0001, [128, 64], 0.5),
-	# 	(0.0001, [512, 256, 128, 64], 0.0)
-	# ]
+	# best 3 gapnet hyperparams after hyperparams tuning
+	# lrs, lrs_gapnet
+	# for binary
+	params_g = [
+		(0.001, 0.01),
+		(0.0001, 0.0001),
+		(0.001, 0.0001)]
 
 	# for classification
 	# params = [
 	# 	(0.0001, [256, 128, 64, 32], 0.0),
 	# 	(0.0005, [512, 256, 128, 64], 0.0),
 	# 	(0.0001, [512, 256], 0.0)]
-	#params = [(0.0005, [8], 0.5), (0.0001, [256, 128], 0.8), (0.0001, [256, 128], 0.0)]
+	#
 
 	# for ranked
-	# params = [
-	# 	(0.0005, [128, 64, 32], 0.0),
-	# 	(0.0005, [512, 256, 128, 64], 0.0),
-	# 	(0.001, [128, 64], 0.0)]
-	params = [(0.0001, [64, 32], 0.0), (0.0005, [16], 0.8), (0.0001, [128, 64], 0.5)]
+	#params = [
+	#	(0.0005, [128, 64, 32], 0.0),
+	#	(0.0005, [512, 256, 128, 64], 0.0),
+	#	(0.001, [128, 64], 0.0)]
 
-	lr_gap = [1e-5, 1e-5*5, 1e-4, 1e-4*5]
-	fes = [True, *lr_gap]
+	# lr_gap = [1e-4]
+	# fes = [True, *lr_gap]
+
+	settings.architecture.feature_extract = True
+
+	gapnet_image_mode = ['mean', 'all']
 
 	settings.log.log_dir = os.path.join(
 		settings.log.log_dir,
@@ -77,17 +76,19 @@ if __name__=='__main__':
 		settings.architecture.model_type)
 	print('Log Dir: {}'.format(settings.log.log_dir))
 
-	for p, fe in product(params, fes):
+	# for p, fe, gim in product(params, fes, gapnet_image_mode):
+	for p, gim in product(params, gapnet_image_mode):
 		settings.optimiser.learning_rate = p[0]
 		settings.architecture.fc_hidden_dims = p[1]
 		settings.architecture.fc_dropout = p[2]
 
-		if fe is True:
-			settings.architecture.feature_extract = fe
-		else:
-			settings.architecture.feature_extract = False
-			settings.optimiser.learning_rate_gapnet = fe
+		settings.architecture.gapnet_image_mode = gim
 
-		supervisor_class = supervisor_dict[settings.architecture.model_type]
-		supervisor = supervisor_class(settings)
+		# if fe is True:
+		# 	settings.architecture.feature_extract = fe
+		# else:
+		# 	settings.architecture.feature_extract = False
+		# 	settings.optimiser.learning_rate_gapnet = fe
+
+		supervisor = DescrCellpaintingMultiSupervisor(settings)
 		perfs = supervisor.cross_validate()

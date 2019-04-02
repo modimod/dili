@@ -1,6 +1,6 @@
 import torch.nn as nn
 import torch
-from torch.nn import CrossEntropyLoss,BCEWithLogitsLoss
+from torch.nn import CrossEntropyLoss,BCEWithLogitsLoss, MSELoss
 from utils.constants import tasks, tasks_idx, pandas_cols
 
 class MultiOuts(nn.Module):
@@ -88,6 +88,32 @@ class MultiOutsBinary(nn.Module):
 
 def masked_loss_binary(outputs, targets, spec_target=None):
 	loss = BCEWithLogitsLoss()
+
+	if spec_target:
+		idx = tasks_idx[spec_target]
+		targets = targets[:, idx] if targets.shape[1] > 1 else targets[:,0]
+		outputs = outputs[:, idx]
+
+	mask = (targets != -1).to(dtype=torch.float)
+	outputs = outputs * mask
+	targets = targets * mask
+
+	return loss(outputs, targets)
+
+class MultiOutsMSE(nn.Module):
+
+	def __init__(self, hidden_dim, out_dim):
+		super().__init__()
+
+		self.fc = nn.Linear(hidden_dim, out_dim)
+
+		self.loss = masked_loss_mse
+
+	def forward(self, x):
+		return self.fc(x)
+
+def masked_loss_mse(outputs, targets, spec_target=None):
+	loss = MSELoss()
 
 	if spec_target:
 		idx = tasks_idx[spec_target]

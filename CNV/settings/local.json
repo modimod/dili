@@ -9,7 +9,7 @@
     "lstm_sliding_window": 3,
     "feature_extract": false,
     "model_type": "descr",
-    "_comment_model_type": ["descr", "descr_gap", "smiles", "smiles_gap", "gapnet"]
+    "_comment_model_type": ["descr", "descr_gap", "smiles", "smiles_gap", "gapnet", "descr_gap_multi"]
   },
   "optimiser": {
     "learning_rate": 0.0001

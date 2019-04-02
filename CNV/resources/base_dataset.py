@@ -3,13 +3,17 @@ import pandas as pd
 
 class BaseDataset(Dataset):
 
-	def __init__(self, csv_file, eval=None):
+	def __init__(self, csv_file, eval=None, transform=None):
 
 		self.data_file = pd.read_csv(csv_file)
 
-		self.clusters = self.data_file['cluster']
+		try:
+			self.clusters = self.data_file['cluster']
+		except KeyError as e:
+			print('no cluster column in dataset - I guess it is a test set')
 
 		self.eval = eval
+		self.transform = transform
 
 		self.len = len(self.data_file)
 

@@ -17,6 +17,7 @@ class DataSettings(object):
 		self.csv_file = settings[r'csv_file']
 		self.descr_file = settings[r'descr_file']
 		self.npzs_file = settings[r'npzs_file']
+		self.npzs_file_gapnet = settings[r'npzs_file_gapnet']
 
 		self.root_dir = settings[r'root_dir']
 		self.file_ext = settings[r'file_ext']
@@ -105,6 +106,8 @@ class ArchitectureSettings(object):
 		self.lstm_sliding_window = settings[r'lstm_sliding_window']
 
 		self.model_type = settings[r'model_type']
+
+		self.gapnet_image_mode = settings[r'gapnet_image_mode']
 
 class OptimiserSettings(object):
 	"""

@@ -1,4 +1,4 @@
-from net.supervisors import SmilesCellpaintingSupervisor, SmilesSupervisor, DescrCellpaintingSupervisor, DescrSupervisor, GapnetSupervisor
+from net.supervisors import SmilesCellpaintingSupervisor, SmilesSupervisor, DescrCellpaintingSupervisor, DescrSupervisor, GapnetSupervisor, DescrCellpaintingMultiSupervisor
 from settings import Settings
 import argparse
 import os
@@ -9,6 +9,7 @@ from torch.utils.data import DataLoader
 supervisor_dict = {
 	'descr': DescrSupervisor,
 	'descr_gap': DescrCellpaintingSupervisor,
+	'descr_gap_multi': DescrCellpaintingMultiSupervisor,
 	'smiles': SmilesSupervisor,
 	'smiles_gap': SmilesCellpaintingSupervisor,
 	'gapnet': GapnetSupervisor
@@ -26,6 +27,8 @@ if __name__=='__main__':
 
 	train_parser = arg_sub_parsers.add_parser(name=r'train', help=r'train network using specified settings file')
 	train_parser.add_argument(r'-s', r'--settings', type=str, help=r'settings file to use', required=True)
+	train_parser.add_argument(r'-g', r'--gpus', type=str, help=r'GPU(s) to use, default empty (cpu)', required=False,
+						   default='')
 
 	predict_parser = arg_sub_parsers.add_parser(name=r'evaluate', help=r'predict dili outcome of test data on already trained model')
 	predict_parser.add_argument(r'-c', r'--checkpoint', type=str, help=r'checkpoint file (pt) to use', required=True)
@@ -33,9 +36,16 @@ if __name__=='__main__':
 
 	args = argparser.parse_args()
 
+	print('GPUs: {}'.format(args.gpus))
+	os.environ['CUDA_VISIBLE_DEVICES'] = args.gpus
+
 	# get settings
 	settings_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'settings', args.settings)
 	settings = Settings.from_json_file(settings_file)
+
+	settings.run.device = 'cuda' if torch.cuda.is_available() else 'cpu'
+
+	settings.architecture.model_type = 'descr'
 
 	if args.mode == r'train':
 		print('Used device: {}'.format(settings.run.device))

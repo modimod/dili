@@ -18,7 +18,10 @@
     "lstm_sliding_window": 3,
     "feature_extract": false,
     "model_type": "descr",
-    "_comment_model_type": ["descr", "descr_gap", "smiles", "smiles_gap", "gapnet"]
+    "_comment_model_type": ["descr", "descr_gap", "smiles", "smiles_gap", "gapnet"],
+
+    "gapnet_image_mode": "mean",
+    "_comment_gapnet_image_mode": ["mean","all"]
   },
   "run": {
     "checkpoint_file": false,
@@ -43,6 +46,8 @@
     "descr_image_file": "/Users/Moerti/AA_projects/DILI/data/FINAL_dilirank_wo_test_descr.csv",
     "file_ext": ".npz",
     "npzs_file": "/Users/Moerti/AA_projects/DILI/src/CNV/data/npzs_inchi_reduced.csv",
+    "npzs_file_gapnet": "/publicwork/students/moertenb/data_FINAL/npzs_inchi_reduced_dilirank.csv",
+
 
     "smiles_csv_file": "/Users/Moerti/AA_projects/DILI/data/dilirank_wo_test_cluster.csv",
     "descr_csv_file": "/Users/Moerti/AA_projects/DILI/data/dilirank_wo_test_cluster.csv",
@@ -54,7 +59,7 @@
     "eval_col_test": "DILI",
     "eval_col": "vnctr",
     "label_format": "binary",
-    "_comment_label_format": "classification, ranked",
+    "_comment_label_format": "classification, ranked"
 
   },
   "log": {

@@ -18,7 +18,7 @@ class SmilesTagger(GeneralTagger):
 			m = SmilesModule
 
 		self.model = m(self.settings)
-		self.model = self.model.to(device=self.device)
+		self._model_to_device()
 
 	def _init_optimizer(self):
 

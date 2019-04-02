@@ -92,14 +92,11 @@ class Normalize(object):
 	"""Normalizes Tensor."""
 
 	def __init__(self, mean, std):
-		self.norm = trans.Normalize(mean,std)
+		self.mean = mean
+		self.std = std
 
 	def __call__(self, sample):
-		image, labels = sample['image'], sample['labels']
-
-		image = self.norm(image)
-
-		return {'image': image, 'labels': labels}
+		return (sample - self.mean)/(1e-9+self.std)
 
 class TakeChannels(object):
 	"""Take only first three channels of image"""

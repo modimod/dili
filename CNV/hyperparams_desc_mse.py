@@ -1,17 +1,9 @@
-from net.supervisors import SmilesCellpaintingSupervisor, SmilesSupervisor, DescrCellpaintingSupervisor, DescrSupervisor, GapnetSupervisor
+from net.supervisors import DescrMSESupervisor
 from settings import Settings
 import argparse
 import os
 import torch
 from itertools import product
-
-supervisor_dict = {
-	'descr': DescrSupervisor,
-	'descr_gap': DescrCellpaintingSupervisor,
-	'smiles': SmilesSupervisor,
-	'smiles_gap': SmilesCellpaintingSupervisor,
-	'gapnet': GapnetSupervisor
-}
 
 if __name__=='__main__':
 
@@ -21,8 +13,7 @@ if __name__=='__main__':
 	argparser = argparse.ArgumentParser(description='Train DILI model')
 
 	argparser.add_argument(r'-s', r'--settings', type=str, help=r'settings file to use', required=True)
-	argparser.add_argument(r'-g', r'--gpus', type=str, help=r'GPU(s) to use, default empty (cpu)', required=False,
-						   default='')
+	argparser.add_argument(r'-g', r'--gpus', type=str, help=r'GPU(s) to use, default empty (cpu)', required=False, default='')
 	argparser.add_argument(r'-lf', r'--labelformat', type=str, help=r'label format', required=True)
 
 	args = argparser.parse_args()
@@ -40,13 +31,31 @@ if __name__=='__main__':
 
 	settings.data.label_format = args.labelformat
 
-	settings.architecture.model_type = 'gapnet'
+	settings.architecture.model_type = 'descr'
 	print('Model type: {}'.format(settings.architecture.model_type))
 
-	# done: lrs 0.0001, lrs_gap, 0.0001, 0.001
 
-	lrs = [0.001, 0.01, 0.1]
-	lrs_gap = [0.0001, 0.001, 0.01]
+	# log 06032019_descr_mse
+
+	lrs = [0.0001, 0.001]
+	hds = [
+		[512, 256, 128, 64],
+		[256, 128, 64, 32],
+		[512, 256, 128],
+		[256, 128, 64],
+		[128, 64, 32],
+		[512, 256],
+		[256, 128],
+		[128, 64],
+		[64, 32],
+		[256],
+		[128],
+		[64],
+		[32],
+		[16],
+		[8]
+		]
+	dos = [0., 0.15]
 
 	settings.log.log_dir = os.path.join(
 		settings.log.log_dir,
@@ -54,10 +63,11 @@ if __name__=='__main__':
 		settings.architecture.model_type)
 	print('Log Dir: {}'.format(settings.log.log_dir))
 
-	for lr, lrg in product(lrs,lrs_gap):
-		settings.optimiser.learning_rate = lr
-		settings.optimiser.learning_rate_gapnet = lrg
+	for lr, do, hd in product(lrs, dos, hds):
 
-		supervisor_class = supervisor_dict[settings.architecture.model_type]
-		supervisor = supervisor_class(settings)
+		settings.optimiser.learning_rate = lr
+		settings.architecture.fc_hidden_dims = hd
+		settings.architecture.fc_dropout = do
+
+		supervisor = DescrMSESupervisor(settings)
 		perfs = supervisor.cross_validate()

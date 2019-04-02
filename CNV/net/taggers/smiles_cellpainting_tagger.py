@@ -22,7 +22,7 @@ class SmilesCellpaintingTagger(GeneralTagger):
 			m = LSTMGapnetModule
 
 		self.model = m(self.settings, feature_extract=self.settings.architecture.feature_extract)
-		self.model = self.model.to(device=self.device)
+		self._model_to_device()
 
 	def _init_optimizer(self):
 

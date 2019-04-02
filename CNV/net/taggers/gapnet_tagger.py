@@ -2,7 +2,7 @@ from torch.optim import Adam, SGD
 from net.taggers.general_tagger import GeneralTagger
 from net.modules.gapnet_module import GapnetModule, GapnetBinaryModule, GapnetRankedModule
 from utils.multiple_optimizer import MultipleOptimizer
-
+from torch import nn
 
 class GapnetTagger(GeneralTagger):
 
@@ -16,7 +16,7 @@ class GapnetTagger(GeneralTagger):
 			m = GapnetModule
 
 		self.model = m(self.settings, feature_extract=self.settings.architecture.feature_extract)
-		self.model = self.model.to(device=self.device)
+		self._model_to_device()
 
 	def _init_optimizer(self):
 		if self.settings.architecture.feature_extract:
@@ -27,6 +27,10 @@ class GapnetTagger(GeneralTagger):
 
 			self.optimizer = Adam(params_to_update, lr=self.settings.optimiser.learning_rate)
 		else:
-			multiout_opt = Adam(self.model.multiout.parameters(), lr=self.settings.optimiser.learning_rate)
-			gapnet_opt = SGD(self.model.gapnet.parameters(), lr=self.settings.optimiser.learning_rate_gapnet)
+			if isinstance(self.model, nn.DataParallel):
+				multiout_opt = Adam(self.model.module.multiout.parameters(), lr=self.settings.optimiser.learning_rate)
+				gapnet_opt = SGD(self.model.module.gapnet.parameters(), lr=self.settings.optimiser.learning_rate_gapnet)
+			else:
+				multiout_opt = Adam(self.model.multiout.parameters(), lr=self.settings.optimiser.learning_rate)
+				gapnet_opt = SGD(self.model.gapnet.parameters(), lr=self.settings.optimiser.learning_rate_gapnet)
 			self.optimizer = MultipleOptimizer(multiout_opt, gapnet_opt)

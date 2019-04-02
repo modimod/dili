@@ -1,6 +1,9 @@
 from sklearn.model_selection import GroupKFold
 from torch.utils.data import DataLoader
 from resources.subset import Subset
+from resources.transforms import Normalize
+from resources.descr_dataset import DescrDataset
+from resources.descriptor_cellpainting_dataset import DescrCellpaintingDataset
 import os
 import shutil
 import time
@@ -42,6 +45,14 @@ class GeneralSupervisor(BaseSupervisor):
 	def fold_gen(self, splitter):
 
 		for train_idx, val_idx in splitter.split(range(self.len), groups=self.dataset.clusters):
+
+			transform = None
+			if isinstance(self.dataset, DescrDataset) or isinstance(self.dataset, DescrCellpaintingDataset):
+				mean, std = self.dataset.get_mean_std(train_idx)
+				transform = Normalize(mean, std)
+
+			self.dataset.transform = transform
+
 			# Subset
 			subset_train = Subset(self.dataset, train_idx)
 			subset_valid = Subset(self.dataset, val_idx)
@@ -52,8 +63,6 @@ class GeneralSupervisor(BaseSupervisor):
 			yield loader_train, loader_valid
 
 	def cross_validate(self, folds=3):
-		print(self.tagger.model)
-
 		kf = GroupKFold(n_splits=folds)
 
 		fold_perfs = list()
@@ -66,7 +75,7 @@ class GeneralSupervisor(BaseSupervisor):
 			_, best_perf = self.fit(loader_train,loader_valid, epochs=self.settings.run.epochs, fold=i)
 
 			# save best perfs to performance dir
-			self._save_performance(best_perf, 'fold{}'.format(i+1))
+			self._save_performance(best_perf, 'fold{}_best'.format(i+1))
 
 			# add best perfs of all folds
 			fold_perfs.append(best_perf)
@@ -85,10 +94,13 @@ class GeneralSupervisor(BaseSupervisor):
 			print('Fold: {} Epoch: {}'.format(fold + 1, epoch + 1))
 
 			train_loss = self.tagger.fit(loader_train, track_loss=True)
-			self.summary_writer.add_scalar('fold{}/train_loss'.format(fold + 1), train_loss, epoch + 1)
+			#self.summary_writer.add_scalar('fold{}/train_loss'.format(fold + 1), train_loss, epoch + 1)
 
 			valid_perf = self._evaluate(loader_valid, epoch=epoch, fold=fold)
-			#_ = self._evaluate_train(loader_train, epoch=epoch, fold=fold)
+			self._save_performance(valid_perf, 'fold_{}_epoch_{}'.format(fold + 1, epoch + 1))
+
+			self.summary_writer.add_scalars('fold{}/losses'.format(fold + 1), {'train': train_loss, 'valid': valid_perf.loss}, epoch + 1)
+			self.summary_writer.add_scalar('fold{}/diff'.format(fold + 1), valid_perf.loss - train_loss, epoch + 1)
 
 			# early stopping
 			if self.settings.run.early_stop and epoch > 0:
@@ -101,19 +113,48 @@ class GeneralSupervisor(BaseSupervisor):
 
 		return best_model, best_perf
 
+	def train_plain(self, epochs):
+
+		self.not_better = 0
+
+		transform = None
+		if isinstance(self.dataset, DescrDataset) or isinstance(self.dataset, DescrCellpaintingDataset):
+			mean, std = self.dataset.get_mean_std()
+			transform = Normalize(mean, std)
+
+		self.dataset.transform = transform
+
+		loader_train = DataLoader(dataset=self.dataset, batch_size=self.settings.run.batch_size, shuffle=True,
+								  collate_fn=self.dataset.collate_fn)
+
+		for epoch in range(epochs):
+			print('Epoch: {}'.format(epoch + 1))
+
+			train_loss = self.tagger.fit(loader_train, track_loss=True)
+			self.summary_writer.add_scalar('plain/train_loss', train_loss, epoch + 1)
+
+			self._save_model(text='epoch_{}'.format(epoch+1))
+
+		self._save_model(text='last_epoch')
+		return self.tagger
+
 	def _evaluate(self, loader_valid, epoch, fold=0):
 
-		loader_valid.dataset.dataset.validation()
-		perf = self.tagger.evaluate(loader_valid, info='valid', eval_col=self.settings.data.eval_col)
-		loader_valid.dataset.dataset.training()
+		if isinstance(loader_valid.dataset, Subset):
+			loader_valid.dataset.dataset.validation()
 
-		self.summary_writer.add_scalar('fold{}/valid_loss'.format(fold + 1), perf.loss, epoch + 1)
-		self.summary_writer.add_scalar('fold{}/valid_acc'.format(fold + 1), perf.accuracy, epoch + 1)
-		self.summary_writer.add_scalar('fold{}/valid_precision'.format(fold + 1), perf.precision, epoch + 1)
-		self.summary_writer.add_scalar('fold{}/valid_recall'.format(fold + 1), perf.recall, epoch + 1)
-		self.summary_writer.add_scalar('fold{}/valid_specificity'.format(fold + 1), perf.specificity, epoch + 1)
-		self.summary_writer.add_scalar('fold{}/valid_f1score'.format(fold + 1), perf.f1score, epoch + 1)
-		self.summary_writer.add_scalar('fold{}/valid_balanced_accuracy'.format(fold + 1), perf.balanced_accuracy,epoch + 1)
+		perf = self.tagger.evaluate(loader_valid, info='valid', eval_col=self.settings.data.eval_col)
+
+		if isinstance(loader_valid.dataset, Subset):
+			loader_valid.dataset.dataset.training()
+
+		# self.summary_writer.add_scalar('fold{}/valid_loss'.format(fold + 1), perf.loss, epoch + 1)
+		# self.summary_writer.add_scalar('fold{}/valid_acc'.format(fold + 1), perf.accuracy, epoch + 1)
+		# self.summary_writer.add_scalar('fold{}/valid_precision'.format(fold + 1), perf.precision, epoch + 1)
+		# self.summary_writer.add_scalar('fold{}/valid_recall'.format(fold + 1), perf.recall, epoch + 1)
+		# self.summary_writer.add_scalar('fold{}/valid_specificity'.format(fold + 1), perf.specificity, epoch + 1)
+		# self.summary_writer.add_scalar('fold{}/valid_f1score'.format(fold + 1), perf.f1score, epoch + 1)
+		# self.summary_writer.add_scalar('fold{}/valid_balanced_accuracy'.format(fold + 1), perf.balanced_accuracy,epoch + 1)
 
 		return perf
 

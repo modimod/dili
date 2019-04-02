@@ -1,8 +1,5 @@
 {
   "architecture": {
-    "fc_layers": 2,
-    "fc_unit_1": 256,
-    "fc_unit_2": 128,
     "fc_hidden_dims": [256, 128, 64, 32],
     "fc_dropout": 0.0,
     "input_dropout": 0,
@@ -10,9 +7,12 @@
     "lstm_num_layers": 2,
     "lstm_dropout": 0.8,
     "lstm_sliding_window": 3,
-    "feature_extract": false,
-    "model_type": "gapnet",
-    "_comment_model_type": ["descr", "descr_gap", "smiles", "smiles_gap", "gapnet"]
+    "feature_extract": true,
+    "model_type": "descr",
+    "_comment_model_type": ["descr", "descr_gap", "smiles", "smiles_gap", "gapnet"],
+
+    "gapnet_image_mode": "mean",
+    "_comment_gapnet_image_mode": ["mean","all"]
   },
   "optimiser": {
     "learning_rate": 0.0001,
@@ -25,8 +25,8 @@
     "cuda": true,
     "gpu": 1,
     "device": "cuda:1",
-    "epochs": 100,
-    "early_stop": 10,
+    "epochs": 50,
+    "early_stop": false,
     "evaluation_interval": 1,
     "batch_size": 32,
     "batch_size_eval": 32,
@@ -36,13 +36,14 @@
   "log": {
     "checkpoint_directory": "/publicwork/students/moertenb/dili/src/CNV/log/checkpoints",
     "summary_directory": "/publicwork/students/moertenb/dili/src/CNV/log/summaries",
-    "log_dir": "/publicwork/students/moertenb/dili/log/",
+    "log_dir": "/publicwork/students/moertenb/dili/log_14032019_descr_xu/",
     "overwrite": true
   },
   "data": {
-    "csv_file": "/publicwork/students/moertenb/data_FINAL/dilirank_wo_test_cluster.csv",
+    "csv_file": "/publicwork/students/moertenb/data_FINAL/dilirank_wo_xu_cluster.csv",
     "descr_file": "/publicwork/students/moertenb/data_FINAL/descr_all.csv",
-    "npzs_file": "/publicwork/students/moertenb/data_FINAL/npzs_inchi_reduced_dilirank.csv",
+    "npzs_file": "/publicwork/students/moertenb/data_FINAL/npzs_inchi_reduced.csv",
+    "npzs_file_gapnet": "/publicwork/students/moertenb/data_FINAL/npzs_inchi_reduced_dilirank.csv",
 
     "root_dir": "/publicdata/cellpainting/npzs/chembl24",
     "file_ext": ".npz",
@@ -58,6 +59,6 @@
     "eval_col": "vnctr",
     "label_format": "binary",
 
-    "csv_file_test": "/publicwork/students/moertenb/cellpainting_tables/nctr_samplekey.csv"
+    "csv_file_test": "/publicwork/students/moertenb/data_FINAL/xu.csv"
   }
 }
